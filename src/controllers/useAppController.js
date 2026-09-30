@@ -90,11 +90,15 @@ export function useAppController() {
       let carrinhoRestaurado = carrinho;
       let pedidoConfirmado = null;
       let limpezaPendente = false;
-      if (carrinho && ultimoPedido && carrinho.id === ultimoPedido.carrinhoId) {
-        // Reconheço um pedido já salvo e deixo pendente apenas a limpeza do carrinho.
-        carrinhoRestaurado = null;
-        pedidoConfirmado = ultimoPedido;
-        limpezaPendente = true;
+      if (carrinho) {
+        if (ultimoPedido) {
+          if (carrinho.id === ultimoPedido.carrinhoId) {
+            // Reconheço um pedido já salvo e deixo pendente apenas a limpeza do carrinho.
+            carrinhoRestaurado = null;
+            pedidoConfirmado = ultimoPedido;
+            limpezaPendente = true;
+          }
+        }
       }
       atualizar({
         pronto: true,
@@ -231,7 +235,7 @@ export function useAppController() {
     }, 'Não foi possível salvar as preferências');
   }
 
-  async function confirmarPedido() {
+  async function confirmarPedido(entrega) {
     if (!podeAlterar()) {
       return false;
     }
@@ -242,6 +246,8 @@ export function useAppController() {
         estadoAtual.current.ultimoPedido,
         armazenamento,
         estadoAtual.current.usuario.id,
+        // Transmito o destino revisado para que ele seja validado junto com a compra.
+        entrega,
       );
       atualizar({
         ultimoPedido: resultado.pedido,

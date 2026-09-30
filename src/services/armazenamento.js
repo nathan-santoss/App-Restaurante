@@ -131,9 +131,11 @@ export async function limparDadosIfome(usuarioId) {
   const existentes = await AsyncStorage.getAllKeys();
   // Escolho somente as chaves desta conta antes de pedir o apagamento.
   const chavesIfome = existentes.filter((chave) => {
-    if (usuarioId === 'admin' && chave.startsWith(prefixo + 'usuario:')) {
-      // Excluo da seleção as contas comuns, pois elas também começam com o prefixo do app.
-      return false;
+    if (usuarioId === 'admin') {
+      if (chave.startsWith(prefixo + 'usuario:')) {
+        // Excluo da seleção as contas comuns, pois elas também começam com o prefixo do app.
+        return false;
+      }
     }
     return chave.startsWith(prefixoUsuario);
   });

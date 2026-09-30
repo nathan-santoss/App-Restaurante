@@ -53,3 +53,73 @@ Teste diretamente no Expo Go: adicione produtos, altere quantidades, revise e
 confirme um pedido. Nos Ajustes, confira os dados opcionais, as preferências,
 o último pedido e as ações de limpeza. Reabra o aplicativo para conferir os
 dados salvos.
+
+## Pedido com localização (aula DM9)
+
+A aula apresenta permissões, coordenadas e mapas. Neste projeto aplico esses
+conceitos ao ponto de entrega do pedido com apenas `expo-location` e
+`react-native-maps`. A permissão é solicitada ao tocar no botão de localização,
+durante a revisão da compra.
+
+### Testar no Expo Go
+
+1. Execute `npm ci` e `npm start` (no PowerShell, use `npm.cmd` se a política de
+   scripts bloquear `npm.ps1`).
+2. Abra no Expo Go compatível com o SDK 57 em um celular Android ou iPhone.
+3. Entre na conta, adicione produtos e abra **Carrinho → Finalizar · Revisar pedido**.
+4. No local onde deseja receber, toque em **Usar minha localização atual**.
+5. Autorize a localização durante o uso. Confira o marcador, latitude, longitude,
+   precisão estimada e horário da captura.
+6. Preencha o complemento opcional, como apartamento ou portaria, e confirme.
+7. Confira a localização no pedido registrado e em **Ajustes → Consultar último pedido**.
+   Feche e reabra o app, entre na mesma conta e consulte novamente.
+
+A captura é pontual: não acompanha deslocamentos nem usa localização em segundo
+plano. Para atualizar o ponto, toque em **Atualizar minha localização**. Ao sair
+da revisão, a captura ainda não confirmada é descartada; ao retornar, capture de
+novo. O GPS indica o ponto onde o aparelho estava; não pesquisa outro endereço,
+não identifica número de apartamento e não calcula rotas ou frete.
+
+O mapa usa o provedor padrão do aparelho. No Expo Go não é necessário cadastrar
+uma chave de mapas. O carregamento do mapa depende de conexão; as coordenadas
+também aparecem em texto. A leitura da localização depende dos serviços e das
+permissões do celular. A mensagem personalizada de permissão do `app.json` vale
+para um aplicativo compilado; no Expo Go, a permissão pertence ao próprio Expo Go.
+
+### Recuperação e armazenamento
+
+- Permissão negada: o carrinho é mantido e a tela orienta uma nova tentativa.
+  Se o sistema não puder perguntar novamente, aparece **Abrir ajustes do celular**.
+- GPS desligado: ative a localização nos ajustes do aparelho e capture novamente.
+- Demora: após 25 segundos de espera pela posição, a tela permite tentar de novo.
+  Uma resposta atrasada não altera o ponto exibido.
+- Precisão baixa: confira o aviso, habilite a localização precisa e tente em um
+  local aberto. A precisão mostrada é uma estimativa do sistema.
+- Um novo pedido exige coordenadas válidas. Pedidos anteriores a esta alteração
+  continuam disponíveis, identificados como sem localização.
+- Coordenadas, precisão, horário e complemento ficam no AsyncStorage junto ao
+  último pedido da conta. **Limpar dados do iFome** remove esse registro.
+  Nome e telefone continuam separados no SecureStore.
+- Se a gravação falhar, os itens permanecem no carrinho. Se apenas a limpeza
+  falhar, o pedido já salvo é preservado e não é registrado novamente.
+
+Os pedidos continuam sendo uma demonstração local, sem envio a restaurante ou
+entregador, cobrança ou rastreamento de entrega.
+
+### Código e verificações
+
+- `src/services/localizacao.js`: permissão, GPS e limite de espera.
+- `src/controllers/useEntregaController.js`: estado da captura e descarte de
+  respostas atrasadas ao sair da revisão.
+- `src/models/entrega.js`: validação dos dados que serão salvos.
+- `src/views/components/EntregaPedido.jsx` e `LocalEntrega.jsx`: formulário,
+  mapa e consulta do destino.
+- `npm test`: testes das regras, permissões simuladas e falhas de armazenamento.
+- `npx expo install --check`: compatibilidade das dependências.
+- `npx expo export --platform all`: compilação dos bundles Android e iOS.
+
+Os testes automatizados simulam o GPS. Permissões nativas, precisão real e
+renderização do mapa devem ser conferidas no celular pelo roteiro acima.
+
+Referências oficiais: [Expo Location](https://docs.expo.dev/versions/latest/sdk/location/)
+e [react-native-maps no Expo](https://docs.expo.dev/versions/latest/sdk/map-view/).

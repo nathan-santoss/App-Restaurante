@@ -102,6 +102,9 @@ export const estilos = StyleSheet.create({
     fontSize: 16,
   },
   campo: { gap: 8 },
+  // Reservo uma altura fixa para o mapa aparecer dentro do conteúdo rolável.
+  molduraMapa: { height: 220, borderRadius: 14, overflow: 'hidden', backgroundColor: cores.fundo },
+  mapa: { width: '100%', height: '100%' },
   opcao: { flexDirection: 'row', alignItems: 'center', gap: 18 },
   aviso: { backgroundColor: cores.aviso, borderRadius: 14, padding: 16, gap: 12 },
   avisoGlobal: {

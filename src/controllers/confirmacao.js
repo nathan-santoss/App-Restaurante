@@ -1,14 +1,14 @@
 import { criarPedido } from '../models/pedido.js';
 
 // Pelo ID do carrinho, descubro se já registrei este pedido em uma tentativa anterior.
-export async function registrarPedido(carrinho, ultimoPedido, armazenamento, usuarioId) {
+export async function registrarPedido(carrinho, ultimoPedido, armazenamento, usuarioId, entrega) {
   if (!carrinho) {
     throw new Error('Seu carrinho está vazio.');
   }
   let pedido = ultimoPedido;
   if (!pedido || pedido.carrinhoId !== carrinho.id) {
     // Crio um registro somente se este carrinho ainda não corresponde ao último pedido.
-    pedido = criarPedido(carrinho);
+    pedido = criarPedido(carrinho, entrega);
     // Primeiro salvo o pedido; só depois tento apagar o carrinho.
     await armazenamento.salvarUltimoPedido(pedido, usuarioId);
   }
