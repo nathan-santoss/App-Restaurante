@@ -18,6 +18,7 @@ import Botao from '../components/Botao.jsx';
 import ItensPedido from '../components/ItensPedido.jsx';
 import Tela from '../components/Tela.jsx';
 import TotalPedido from '../components/TotalPedido.jsx';
+import LocalEntrega from '../components/LocalEntrega.jsx';
 
 export default function AjustesScreen({ navigation }) {
   const {
@@ -182,6 +183,8 @@ export default function AjustesScreen({ navigation }) {
             </Text>
             <Text style={estilos.texto}>{formatarData(resumoUltimoPedido.data)}</Text>
             <ItensPedido itens={resumoUltimoPedido.itens} />
+            {/* Reexibo o destino salvo com o pedido, mesmo depois de reiniciar o aplicativo. */}
+            <LocalEntrega entrega={resumoUltimoPedido.entrega} />
             <TotalPedido
               totalCentavos={resumoUltimoPedido.totalCentavos}
               totalUnidades={resumoUltimoPedido.totalUnidades}

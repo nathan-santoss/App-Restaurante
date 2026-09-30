@@ -88,8 +88,10 @@ export const produtos = [
 export function buscarProduto(id) {
   // Procuro pelo ID, pois o nome exibido não é a identificação usada no carrinho.
   for (const produto of produtos) {
-    if (produto.id === id && produto.disponivel) {
-      return produto;
+    if (produto.id === id) {
+      if (produto.disponivel) {
+        return produto;
+      }
     }
   }
 

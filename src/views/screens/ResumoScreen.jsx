@@ -1,4 +1,7 @@
-import { ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
+import { useEntregaController } from '../../controllers/useEntregaController.js';
+import EntregaPedido from '../components/EntregaPedido.jsx';
+import LocalEntrega from '../components/LocalEntrega.jsx';
 import { useApp } from '../../contexts/AppContext.jsx';
 import { estilos } from '../../styles/telas.js';
 import { formatarData } from '../../utils/formatacao.js';
@@ -10,6 +13,7 @@ import TotalPedido from '../components/TotalPedido.jsx';
 
 export default function ResumoScreen({ navigation }) {
   const {
+    carrinho,
     itens,
     totalCentavos,
     totalUnidades,
@@ -18,6 +22,19 @@ export default function ResumoScreen({ navigation }) {
     resumoConfirmado,
     bloqueado,
   } = useApp();
+  // Preparo a captura para este carrinho sem pedir permissão ao abrir o aplicativo.
+  let carrinhoId;
+  if (carrinho) {
+    carrinhoId = carrinho.id;
+  }
+  const localizacao = useEntregaController(carrinhoId);
+
+  function finalizarComEntrega() {
+    if (!localizacao.entrega || localizacao.buscando) {
+      return;
+    }
+    return confirmarPedido(localizacao.entrega);
+  }
 
   function comecarOutroPedido() {
     navigation.popToTop();
@@ -59,6 +76,10 @@ export default function ResumoScreen({ navigation }) {
           </View>
           {/* Apresento os itens confirmados sem edição para preservar o registro deste pedido. */}
           <ItensPedido itens={resumoConfirmado.itens} />
+          {/* Recupero o ponto da cópia salva, sem fazer outra consulta ao GPS. */}
+          <View style={estilos.cartao}>
+            <LocalEntrega entrega={resumoConfirmado.entrega} />
+          </View>
           <TotalPedido
             totalCentavos={resumoConfirmado.totalCentavos}
             totalUnidades={resumoConfirmado.totalUnidades}
@@ -84,6 +105,26 @@ export default function ResumoScreen({ navigation }) {
       );
     }
 
+    return null;
+  }
+
+  function mostrarEntrega() {
+    // Disponibilizo o formulário de entrega apenas enquanto há itens para revisar.
+    if (itens.length > 0) {
+      return <EntregaPedido localizacao={localizacao} bloqueado={bloqueado} />;
+    }
+    return null;
+  }
+
+  function mostrarOrientacaoLocalizacao() {
+    // Sinalizo a captura pendente depois de conferir que o carrinho tem produtos.
+    if (itens.length > 0) {
+      if (!localizacao.entrega) {
+        return (
+          <Text style={estilos.etiqueta}>Capture a localização da entrega para confirmar.</Text>
+        );
+      }
+    }
     return null;
   }
 
@@ -133,33 +174,42 @@ export default function ResumoScreen({ navigation }) {
       titulo="Resumo do pedido"
       subtitulo="Confira os detalhes antes de confirmar."
     >
-      <ScrollView contentContainerStyle={estilos.conteudo}>
-        {mostrarResumoVazio()}
-        {/* Reutilizo ItensPedido para apresentar cada produto com quantidade, preço e subtotal. */}
-        <ItensPedido itens={itens} />
-        {/* Incluo nome e telefone apenas se a pessoa tiver salvo esses dados. */}
-        {mostrarCliente()}
-        <Botao
-          titulo="Voltar ao carrinho e corrigir"
-          variante="secundario"
-          aoPressionar={corrigirCarrinho}
-          desabilitado={bloqueado}
-        />
-        <Text style={estilos.texto}>
-          Ao confirmar, o pedido será registrado somente neste aparelho. Nenhum pagamento
-          será realizado.
-        </Text>
-      </ScrollView>
-      <View style={estilos.rodape}>
-        {/* Entrego os totais ao componente TotalPedido, que organiza a apresentação dos valores. */}
-        <TotalPedido totalCentavos={totalCentavos} totalUnidades={totalUnidades} />
-        {/* Somente neste botão chamo a ação que registra o pedido no aparelho. */}
-        <Botao
-          titulo="Confirmar pedido"
-          aoPressionar={confirmarPedido}
-          desabilitado={bloqueado || itens.length === 0}
-        />
-      </View>
+      <KeyboardAvoidingView style={estilos.corpo} behavior="padding">
+        <ScrollView
+          contentContainerStyle={estilos.conteudo}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          {mostrarResumoVazio()}
+          {/* Reutilizo ItensPedido para apresentar cada produto com quantidade, preço e subtotal. */}
+          <ItensPedido itens={itens} />
+          {/* Incluo nome e telefone apenas se a pessoa tiver salvo esses dados. */}
+          {mostrarCliente()}
+          {/* Ofereço a captura de entrega apenas quando tenho produtos para confirmar. */}
+          {mostrarEntrega()}
+          <Botao
+            titulo="Voltar ao carrinho e corrigir"
+            variante="secundario"
+            aoPressionar={corrigirCarrinho}
+            desabilitado={bloqueado}
+          />
+          <Text style={estilos.texto}>
+            Ao confirmar, o pedido será registrado somente neste aparelho. Nenhum pagamento
+            será realizado.
+          </Text>
+        </ScrollView>
+        <View style={estilos.rodape}>
+          {/* Entrego os totais ao componente TotalPedido, que organiza a apresentação dos valores. */}
+          <TotalPedido totalCentavos={totalCentavos} totalUnidades={totalUnidades} />
+          {mostrarOrientacaoLocalizacao()}
+          {/* Somente neste botão chamo a ação que registra o pedido no aparelho. */}
+          <Botao
+            titulo="Confirmar pedido"
+            aoPressionar={finalizarComEntrega}
+            desabilitado={bloqueado || itens.length === 0 || !localizacao.entrega || localizacao.buscando}
+          />
+        </View>
+      </KeyboardAvoidingView>
     </Tela>
   );
 }

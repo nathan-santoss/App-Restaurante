@@ -1,4 +1,5 @@
 import { buscarProduto, produtos } from './cardapio.js';
+import { validarEntrega } from './entrega.js';
 
 export const quantidadeMaxima = 99;
 
@@ -198,7 +199,7 @@ export function restaurarCarrinho(dados) {
   return { id: dados.id, itens: itens };
 }
 
-export function criarPedido(carrinho, data = new Date()) {
+export function criarPedido(carrinho, entrega, data = new Date()) {
   if (!carrinho || carrinho.itens.length === 0) {
     throw new Error('Adicione itens antes de confirmar.');
   }
@@ -211,6 +212,8 @@ export function criarPedido(carrinho, data = new Date()) {
     data: data.toISOString(),
     itens: itens,
     totalCentavos: totais.totalCentavos,
+    // Vinculo uma cópia da localização à compra antes de permitir a gravação.
+    entrega: validarEntrega(entrega),
   };
 }
 
@@ -233,6 +236,11 @@ export function restaurarPedido(dados) {
     // Recuso o registro se o total salvo não corresponde à soma dos itens.
     throw new Error('O total do pedido salvo é inválido.');
   }
+  // Preservo a leitura dos pedidos antigos, que ainda não tinham ponto de entrega.
+  let entrega = null;
+  if (dados.entrega != null) {
+    entrega = validarEntrega(dados.entrega);
+  }
   // Trago de volta só os dados do pedido, sem misturar nome ou telefone.
   return {
     id: dados.id,
@@ -240,5 +248,6 @@ export function restaurarPedido(dados) {
     data: dados.data,
     itens: itens,
     totalCentavos: dados.totalCentavos,
+    entrega: entrega,
   };
 }
