@@ -38,21 +38,18 @@ export function gerarIdentificador() {
 
 // No Model, faço as contas em centavos; deixo a apresentação em reais para a tela.
 export function calcularTotais(itens) {
-  let totalCentavos = 0;
-  let totalUnidades = 0;
-  const itensCalculados = [];
-
-  for (const item of itens) {
+  // Acumulo com reduce os valores de cada item em um único resumo do pedido.
+  return itens.reduce((totais, item) => {
     const subtotalCentavos = item.precoCentavos * item.quantidade;
     // Somo o valor desta linha ao pedido e conto todas as unidades escolhidas.
-    totalCentavos = totalCentavos + subtotalCentavos;
-    totalUnidades = totalUnidades + item.quantidade;
+    totais.totalCentavos = totais.totalCentavos + subtotalCentavos;
+    totais.totalUnidades = totais.totalUnidades + item.quantidade;
 
     // Com os três pontos, copio os campos sem alterar o item original.
     const itemCalculado = { ...item, subtotalCentavos: subtotalCentavos };
-    itensCalculados.push(itemCalculado);
-  }
-  return { itens: itensCalculados, totalCentavos: totalCentavos, totalUnidades: totalUnidades };
+    totais.itens.push(itemCalculado);
+    return totais;
+  }, { itens: [], totalCentavos: 0, totalUnidades: 0 });
 }
 
 export function adicionarProduto(carrinho, produtoId, quantidade) {
@@ -92,16 +89,13 @@ export function alterarQuantidade(carrinho, produtoId, quantidade) {
     return null;
   }
 
-  const novosItens = [];
-  // Percorro os itens e troco apenas a quantidade do produto escolhido.
-  for (const item of carrinho.itens) {
+  // Produzo com map uma nova lista, trocando apenas a quantidade do produto escolhido.
+  const novosItens = carrinho.itens.map((item) => {
     if (item.id === produtoId) {
-      const itemAtualizado = { ...item, quantidade: quantidade };
-      novosItens.push(itemAtualizado);
-    } else {
-      novosItens.push(item);
+      return { ...item, quantidade: quantidade };
     }
-  }
+    return item;
+  });
 
   return { ...carrinho, itens: novosItens };
 }
@@ -110,14 +104,10 @@ export function removerProduto(carrinho, produtoId) {
   if (!carrinho) {
     return null;
   }
-  const itens = [];
-
-  // Monto outra lista e deixo de fora o produto que quero remover.
-  for (const item of carrinho.itens) {
-    if (item.id !== produtoId) {
-      itens.push(item);
-    }
-  }
+  // Seleciono com filter os itens que permanecem depois da remoção.
+  const itens = carrinho.itens.filter((item) => {
+    return item.id !== produtoId;
+  });
   if (itens.length === 0) {
     // Represento o carrinho vazio com null para que o Controller apague seu registro.
     return null;
@@ -139,10 +129,8 @@ function validarItens(itens) {
     throw new Error('A lista de itens salva tem formato inválido.');
   }
   const idsEncontrados = [];
-  const itensValidados = [];
-
-  // Antes de usar o que foi salvo, verifico cada item e procuro IDs repetidos.
-  for (const item of itens) {
+  // Examino cada posição, inclusive espaços vazios, antes de montar os itens validados.
+  const itensValidados = Array.from(itens).map((item) => {
     if (
       !item ||
       !validarId(item.id) ||
@@ -158,15 +146,14 @@ function validarItens(itens) {
     }
     validarQuantidade(item.quantidade);
     idsEncontrados.push(item.id);
-    // Guardo cada ID validado para reconhecer uma repetição nas próximas voltas do laço.
-    const itemValidado = {
+    // Guardo cada ID validado para reconhecer uma repetição nos próximos itens.
+    return {
       id: item.id,
       nome: item.nome,
       precoCentavos: item.precoCentavos,
       quantidade: item.quantidade,
     };
-    itensValidados.push(itemValidado);
-  }
+  });
 
   return itensValidados;
 }
@@ -183,18 +170,19 @@ export function restaurarCarrinho(dados) {
   if (itens.length > produtos.length) {
     throw new Error('O carrinho possui itens desconhecidos.');
   }
-  for (const item of itens) {
+  // Detecto com some se existe um item diferente do cardápio e paro na primeira diferença.
+  const possuiProdutoAlterado = itens.some((item) => {
     const produto = buscarProduto(item.id);
-    // Comparo os dados salvos com o cardápio atual antes de permitir continuar a compra.
-    if (
+    return (
       !produto ||
       produto.precoCentavos !== item.precoCentavos ||
       produto.nome !== item.nome
-    ) {
-      throw new Error(
-        'O carrinho salvo contém um produto que mudou ou não está disponível.',
-      );
-    }
+    );
+  });
+  if (possuiProdutoAlterado) {
+    throw new Error(
+      'O carrinho salvo contém um produto que mudou ou não está disponível.',
+    );
   }
   return { id: dados.id, itens: itens };
 }

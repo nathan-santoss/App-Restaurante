@@ -86,33 +86,24 @@ export const produtos = [
 ];
 
 export function buscarProduto(id) {
-  // Procuro pelo ID, pois o nome exibido não é a identificação usada no carrinho.
-  for (const produto of produtos) {
-    if (produto.id === id) {
-      if (produto.disponivel) {
-        return produto;
-      }
+  // Localizo com find o primeiro produto disponível com esse ID; sem resultado, recebo undefined.
+  return produtos.find((produto) => {
+    if (produto.id !== id) {
+      return false;
     }
-  }
-
-  // Devolvo undefined quando não encontro uma opção disponível com esse ID.
-  return undefined;
+    return produto.disponivel;
+  });
 }
 
 export function filtrarProdutos(categoria) {
-  const produtosFiltrados = [];
-
-  // Acrescento à lista apenas o que está disponível na categoria escolhida.
-  for (const produto of produtos) {
-    if (produto.disponivel) {
-      if (categoria === 'Todos') {
-        // Nesta opção, incluo tanto as comidas quanto as bebidas disponíveis.
-        produtosFiltrados.push(produto);
-      } else if (produto.categoria === categoria) {
-        produtosFiltrados.push(produto);
-      }
+  // Filtro as opções disponíveis e mantenho a ordem em que aparecem no cardápio.
+  return produtos.filter((produto) => {
+    if (!produto.disponivel) {
+      return false;
     }
-  }
-
-  return produtosFiltrados;
+    if (categoria === 'Todos') {
+      return true;
+    }
+    return produto.categoria === categoria;
+  });
 }

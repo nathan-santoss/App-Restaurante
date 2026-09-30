@@ -39,15 +39,17 @@ export function criarUsuario(email) {
     return { id: 'admin', email: email, administrador: true };
   }
 
+  // Separo com Array.from os caracteres completos, inclusive os que ocupam duas posições no texto.
+  const caracteres = Array.from(email);
   // Transformo cada letra em um código para montar uma chave aceita pelo SecureStore.
-  let identificador = '';
-  for (const letra of email) {
+  const codigos = caracteres.map((letra) => {
     const codigoDaLetra = letra.codePointAt(0);
     const codigoEmHexadecimal = codigoDaLetra.toString(16);
-    const codigoComSeisPosicoes = codigoEmHexadecimal.padStart(6, '0');
     // Completo cada código até seis posições para manter a separação entre os caracteres.
-    identificador = identificador + codigoComSeisPosicoes;
-  }
+    return codigoEmHexadecimal.padStart(6, '0');
+  });
+  // Uno os códigos com join, sem separadores, para preservar a identificação das contas existentes.
+  const identificador = codigos.join('');
 
   return { id: 'u-' + identificador, email: email, administrador: false };
 }

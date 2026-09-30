@@ -86,14 +86,8 @@ export async function salvarUltimoPedido(pedido, usuarioId) {
 export async function carregarPreferencias(usuarioId) {
   const chaves = obterChaves(usuarioId);
   const pares = await AsyncStorage.multiGet([chaves.categoria, chaves.descricoes]);
-  const valores = {};
-
-  // Recebo pares de chave e valor; separo cada um para facilitar a leitura abaixo.
-  for (const par of pares) {
-    const chave = par[0];
-    const valor = par[1];
-    valores[chave] = valor;
-  }
+  // Converto os pares em um objeto com Object.fromEntries para consultar cada valor pela chave.
+  const valores = Object.fromEntries(pares);
   const preferencias = { ...preferenciasIniciais };
   // Parto das opções padrão e substituo somente as que encontro salvas.
   if (valores[chaves.categoria] !== null) {
