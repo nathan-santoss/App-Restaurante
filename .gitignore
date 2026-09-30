@@ -6,3 +6,9 @@ npm-debug.*
 .env*.local
 /ios/
 /android/
+
+# Testes locais
+/tests/
+__tests__/
+*.test.*
+*.spec.*
