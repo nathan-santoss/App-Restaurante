@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "iFome",
+    "slug": "ifome",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "config": { "usesNonExemptEncryption": false }
+    },
+    "plugins": [["expo-secure-store", { "faceIDPermission": false }]]
+  }
+}
