@@ -123,3 +123,81 @@ renderização do mapa devem ser conferidas no celular pelo roteiro acima.
 
 Referências oficiais: [Expo Location](https://docs.expo.dev/versions/latest/sdk/location/)
 e [react-native-maps no Expo](https://docs.expo.dev/versions/latest/sdk/map-view/).
+
+## Build iOS pelo GitHub Actions
+
+Este fluxo gera um app **Release para iPhone físico (iphoneos / arm64)**, com o
+JavaScript incorporado. Depois da instalação, não precisa de Expo Go nem do
+servidor de desenvolvimento no computador.
+
+**Pré-requisitos:** repositório público com Actions habilitado, iPhone com iOS
+16.4 ou superior e AltServer no Windows / AltStore Classic no iPhone. O runner
+padrão de repositório público é gratuito; o workflow não executa em repositório
+privado. A Apple ID gratuita é usada apenas no sideload, fora do GitHub.
+
+### Executar e baixar
+
+1. Abra **Actions → Build iOS unsigned → Run workflow**.
+2. Selecione a branch com esta configuração e confirme **Run workflow**.
+3. Aguarde o job terminar com sucesso.
+4. Em **Artifacts**, baixe **iFome-iOS** e extraia o ZIP do GitHub.
+5. Localize o arquivo `.ipa` (o nome vem do produto gerado pelo Xcode).
+6. Envie o IPA para o app Arquivos do iPhone. No AltStore Classic, use
+   **My Apps → +** para selecioná-lo, com o AltServer disponível no computador.
+
+**Primeira execução em uma branch:** o GitHub só habilita o disparo manual depois
+que este workflow estiver também na branch padrão (`main`). Antes dessa
+integração, inicie intencionalmente um build criando uma tag no commit desejado:
+
+```sh
+git tag ios-test-20261001-1
+git push origin ios-test-20261001-1
+```
+
+Use um nome novo a cada teste. Pushes comuns de código não disparam builds.
+Também é possível usar **Re-run jobs** em uma execução existente para repetir
+o mesmo commit. O artifact fica disponível por 3 dias; baixe-o nesse período.
+
+### O que o build faz
+
+A configuração atual usa Expo 57.0.26, React Native 0.86.3 e React 19.2.3.
+O workflow utiliza Node 22 (compatível com `engines`), `npm ci`, o runner
+`macos-26` e Xcode 26.6, disponível nessa imagem. O CocoaPods vem do runner,
+e sua versão aparece nos logs.
+
+A pasta `ios/` é gerada por `expo prebuild --platform ios --clean --no-install`
+a partir do template do Expo instalado. Em seguida, executo `pod install`.
+Não é necessário versionar código nativo manualmente. Workspace, scheme,
+produto e caminho do app são descobertos no projeto gerado.
+
+O script `scripts/build-ios.py` confere executável, Info.plist, identificador,
+arquitetura, plataforma de dispositivo, JavaScript incorporado e estrutura ZIP
+`Payload/Nome.app`. O artifact **iFome-iOS-diagnostico** guarda logs e o
+`Podfile.lock` resolvido nessa execução, úteis se o build falhar.
+
+### Assinatura e teste no aparelho
+
+O IPA **não está assinado para instalação direta ou App Store**. O AltStore/
+AltServer precisa reassiná-lo e criar o provisionamento com sua conta gratuita.
+Nenhuma senha, certificado Apple, conta EAS ou segredo Apple é usado no workflow.
+
+Instale o AltServer, iTunes e iCloud seguindo o
+[guia oficial para Windows](https://faq.altstore.io/altstore-classic/how-to-install-altstore-windows).
+Confie no computador/perfil e habilite o Modo de Desenvolvedor do iPhone quando
+solicitado. A conta gratuita permite até 3 apps ativos (incluindo AltStore) e exige
+renovação a cada 7 dias pelo AltServer. Consulte as
+[limitações do AltStore](https://faq.altstore.io/altstore-classic/your-altstore).
+
+Após instalar, abra o iFome pela tela inicial, entre na conta, adicione produtos,
+capture a localização e confirme um pedido. Os dados ficam na instalação nova;
+os registros do Expo Go não são transferidos automaticamente. Teste também
+fechar/reabrir o app e consultar o último pedido. Mudanças no código exigem novo
+build e nova instalação.
+
+Uma execução verde comprova compilação e empacotamento; não comprova a
+reassinatura nem o funcionamento no seu iPhone. Essas etapas precisam ser
+validadas no dispositivo.
+
+Referências: [runner macOS](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md),
+[execução manual](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)
+e [uso gratuito de Actions](https://docs.github.com/en/billing/concepts/product-billing/github-actions).

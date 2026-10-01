@@ -12,3 +12,11 @@ npm-debug.*
 __tests__/
 *.test.*
 *.spec.*
+
+# Artefatos locais e temporários do build iOS
+/build/
+DerivedData/
+Payload/
+*.ipa
+*.xcarchive
+__pycache__/

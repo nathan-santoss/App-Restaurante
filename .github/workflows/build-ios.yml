@@ -1,0 +1,96 @@
+name: Build iOS unsigned
+
+on:
+  workflow_dispatch:
+  # Inicio testes por uma tag intencional, sem compilar a cada push de código.
+  push:
+    tags:
+      - 'ios-test-*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-unsigned-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # Restrinjo este fluxo gratuito aos runners padrão de repositórios públicos.
+    if: github.event.repository.private == false
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          # Escolho a linha 22, compatível com engines do projeto e do React Native.
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Conferir ferramentas
+        run: |
+          set -euo pipefail
+          node --version
+          npm --version
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          pod --version
+          python3 --version
+
+      - name: Instalar dependências fixadas
+        run: |
+          set -euo pipefail
+          npm ci
+          node -e "const s = require('semver'); if (!s.satisfies(process.version, require('./package.json').engines.node)) process.exit(1);"
+          node -e "console.log('Expo', require('expo/package.json').version, 'React Native', require('react-native/package.json').version, 'React', require('react/package.json').version);"
+
+      - name: Gerar projeto nativo iOS
+        run: |
+          set -euo pipefail
+          npx expo prebuild --platform ios --clean --no-install --skip-dependency-update react,react-native
+          test -f ios/Podfile
+          # Inspeciono o Podfile gerado e uso o CocoaPods já instalado no runner.
+          cat ios/Podfile
+          pod install --project-directory=ios
+
+      - name: Compilar e validar IPA para iPhone
+        run: python3 scripts/build-ios.py
+
+      - name: Publicar IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: iFome-iOS
+          path: build/ios-unsigned/*.ipa
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 3
+
+      - name: Guardar diagnóstico
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iFome-iOS-diagnostico
+          path: |
+            build/ios-unsigned/*.log
+            build/ios-unsigned/*.json
+            ios/Podfile.lock
+            ios/Podfile
+            ios/Podfile.properties.json
+          if-no-files-found: warn
+          retention-days: 3
